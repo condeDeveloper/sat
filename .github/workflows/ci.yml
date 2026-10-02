@@ -1,0 +1,48 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ${{ matrix.so }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # O juiz e a forca bruta, que nao conhece algoritmo nenhum: ela enumera as
+      # 2^n atribuicoes e responde pela definicao. Isso importa porque resolvedor
+      # errado e resolvedor que PODA DEMAIS, e um juiz que tambem poda nao pega
+      # esse erro.
+      #
+      # E a comparacao e no dominio INTEIRO, nao por amostra: sobre 3 variaveis
+      # existem 26 clausulas nao tautologicas de ate 3 literais, e o teste monta
+      # toda combinacao de ate 4 delas, 17.901 formulas. Cada uma passa pela
+      # forca bruta, por tres configuracoes de DPLL e pelo CDCL, e os cinco tem
+      # de concordar. Instancia sorteada quase nunca cai nos casos que quebram;
+      # aqui eles sao todos os casos.
+      #
+      # Fora do dominio exaustivo ficam as familias de resposta conhecida por
+      # teorema: casas de pombo (insatisfativel por contagem), grafo completo
+      # (precisa de uma cor por vertice) e formula plantada (satisfativel por
+      # construcao, com o modelo escondido de testemunha).
+      - name: testes
+        run: dotnet test testes/Sat.Testes/Sat.Testes.csproj -c Release --nologo -v q
+
+      # As medidas rodam para REGISTRAR numeros. Nao ha asseveracao de tempo.
+      - name: o preco de nao aprender com o conflito
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release --nologo -- aprender
+
+      - name: quantas variaveis cada decisao arrasta
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release --nologo -- propagar
